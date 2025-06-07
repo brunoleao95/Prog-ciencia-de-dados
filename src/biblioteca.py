@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import List, Dict
+from datetime import datetime
 
 class GerenciadorArquivos:
     def __init__(self, diretorio_base: str = "data"):
@@ -21,10 +22,14 @@ class GerenciadorArquivos:
         for tipo in self.tipos_permitidos:
             for arquivo in self.diretorio_base.glob(f'**/*{tipo}'):
                 if arquivo.is_file():
+                    # Obtém o ano da última modificação do arquivo
+                    ano_publicacao = datetime.fromtimestamp(arquivo.stat().st_mtime).year
+                    
                     documentos.append({
                         'nome': arquivo.name,
                         'caminho': str(arquivo),
-                        'tipo': tipo
+                        'tipo': tipo,
+                        'ano': ano_publicacao
                     })
         
         return documentos
@@ -38,5 +43,6 @@ if __name__ == "__main__":
     for doc in documentos:
         print(f"Nome: {doc['nome']}")
         print(f"Tipo: {doc['tipo']}")
+        print(f"Ano: {doc['ano']}")
         print(f"Caminho: {doc['caminho']}")
         print("-" * 50)
