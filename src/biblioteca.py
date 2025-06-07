@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from typing import List, Dict
 from datetime import datetime
@@ -7,6 +8,12 @@ class GerenciadorArquivos:
     def __init__(self, diretorio_base: str = "data"):
         self.diretorio_base = Path(diretorio_base)
         self.tipos_permitidos = {'.pdf', '.epub', '.txt'}
+        # Mapeamento de tipos para diretórios
+        self.diretorios_tipo = {
+            '.pdf': 'artigos/pdf',
+            '.epub': 'livros/epub',
+            '.txt': 'documentos/txt'
+        }
     
     def listar_documentos(self) -> List[Dict[str, str]]:
         """
@@ -34,11 +41,43 @@ class GerenciadorArquivos:
         
         return documentos
 
+    def adicionar_documento(self, caminho_arquivo: str) -> bool:
+        """
+        Adiciona um novo documento ao sistema.
+        
+        """
+        try:
+            arquivo_origem = Path(caminho_arquivo)
+            
+            # Verifica se é um tipo permitido
+            extensao = arquivo_origem.suffix.lower()
+            if extensao not in self.tipos_permitidos:
+                print(f"\nErro: Tipo de arquivo '{extensao}' não é permitido!")
+                print(f"Tipos permitidos: {', '.join(self.tipos_permitidos)}")
+                return False
+            
+            # Define o diretório de destino
+            diretorio_destino = self.diretorio_base / self.diretorios_tipo[extensao]
+            diretorio_destino.mkdir(parents=True, exist_ok=True)
+            
+            # Define o caminho completo de destino
+            arquivo_destino = diretorio_destino / arquivo_origem.name
+            
+            # Copia o arquivo para o diretório de destino
+            shutil.copy2(arquivo_origem, arquivo_destino)
+            print(f"\nDocumento adicionado com sucesso em: {arquivo_destino}")
+            return True
+            
+        except Exception as e:
+            print(f"\nErro ao adicionar documento: {str(e)}")
+            return False
+
 def exibir_menu():
     """Exibe o menu principal do sistema."""
     print("\n=== Sistema de Gerenciamento de Biblioteca Digital ===")
     print("1. Listar todos os documentos")
-    print("2. Sair")
+    print("2. Adicionar novo documento")
+    print("3. Sair")
     print("=" * 50)
 
 def exibir_documentos(documentos: List[Dict[str, str]]):
@@ -62,7 +101,7 @@ def main():
     
     while True:
         exibir_menu()
-        opcao = input("\nEscolha uma opção (1-2): ").strip()
+        opcao = input("\nEscolha uma opção (1-3): ").strip()
         
         if opcao == "1":
             documentos = gerenciador.listar_documentos()
@@ -70,11 +109,24 @@ def main():
             input("\nPressione Enter para continuar...")
         
         elif opcao == "2":
+            print("\nAdicionar novo documento")
+            print("=" * 50)
+            print("Tipos de arquivo permitidos:", ", ".join(gerenciador.tipos_permitidos))
+            caminho = input("\nDigite o caminho completo do arquivo: ").strip()
+            
+            if caminho:
+                gerenciador.adicionar_documento(caminho)
+            else:
+                print("\nNenhum caminho fornecido!")
+            
+            input("\nPressione Enter para continuar...")
+        
+        elif opcao == "3":
             print("\nObrigado por usar o Sistema de Gerenciamento de Biblioteca Digital!")
             break
         
         else:
-            print("\nOpção inválida! Por favor, escolha 1 ou 2.")
+            print("\nOpção inválida! Por favor, escolha 1, 2 ou 3.")
             input("Pressione Enter para continuar...")
 
 if __name__ == "__main__":
