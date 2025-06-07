@@ -92,13 +92,28 @@ class GerenciadorArquivos:
             print(f"\nErro ao renomear documento: {str(e)}")
             return False
 
+    def remover_documento(self, caminho_arquivo: str) -> bool:
+        """
+        Remove um documento do sistema.
+        """
+        try:
+            arquivo = Path(caminho_arquivo)
+            arquivo.unlink()
+            print(f"\nDocumento removido com sucesso: {arquivo.name}")
+            return True
+            
+        except Exception as e:
+            print(f"\nErro ao remover documento: {str(e)}")
+            return False
+
 def exibir_menu():
     """Exibe o menu principal do sistema."""
     print("\n=== Sistema de Gerenciamento de Biblioteca Digital ===")
     print("1. Listar todos os documentos")
     print("2. Adicionar novo documento")
     print("3. Renomear documento")
-    print("4. Sair")
+    print("4. Remover documento")
+    print("5. Sair")
     print("=" * 50)
 
 def exibir_documentos(documentos: List[Dict[str, str]]):
@@ -122,7 +137,7 @@ def main():
     
     while True:
         exibir_menu()
-        opcao = input("\nEscolha uma opção (1-4): ").strip()
+        opcao = input("\nEscolha uma opção (1-5): ").strip()
         
         if opcao == "1":
             documentos = gerenciador.listar_documentos()
@@ -166,11 +181,34 @@ def main():
             input("\nPressione Enter para continuar...")
         
         elif opcao == "4":
+            print("\nRemover documento")
+            print("=" * 50)
+            documentos = gerenciador.listar_documentos()
+            exibir_documentos(documentos)
+            
+            if documentos:
+                try:
+                    num_doc = int(input("\nDigite o número do documento a ser removido: ").strip())
+                    if 1 <= num_doc <= len(documentos):
+                        doc = documentos[num_doc - 1]
+                        confirmacao = input(f"\nTem certeza que deseja remover '{doc['nome']}'? (s/n): ").strip().lower()
+                        if confirmacao == 's':
+                            gerenciador.remover_documento(doc['caminho'])
+                        else:
+                            print("\nOperação cancelada!")
+                    else:
+                        print("\nNúmero de documento inválido!")
+                except ValueError:
+                    print("\nPor favor, digite um número válido!")
+            
+            input("\nPressione Enter para continuar...")
+        
+        elif opcao == "5":
             print("\nObrigado por usar o Sistema de Gerenciamento de Biblioteca Digital!")
             break
         
         else:
-            print("\nOpção inválida! Por favor, escolha 1, 2, 3 ou 4.")
+            print("\nOpção inválida! Por favor, escolha 1, 2, 3, 4 ou 5.")
             input("Pressione Enter para continuar...")
 
 if __name__ == "__main__":
