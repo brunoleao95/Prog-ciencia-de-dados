@@ -1,0 +1,16 @@
+Introdução à Programação em Python
+
+Este é um documento de texto de exemplo para o sistema de biblioteca digital.
+Ele contém informações básicas sobre programação em Python.
+
+Autor: Maria Silva
+Data: 07/06/2025
+
+Conteúdo:
+1. Introdução
+2. Conceitos Básicos
+3. Estruturas de Dados
+4. Funções e Módulos
+
+Este é um exemplo de como um documento de texto pode ser armazenado
+no sistema de biblioteca digital.

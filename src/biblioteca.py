@@ -4,44 +4,39 @@ from typing import List, Dict
 
 class GerenciadorArquivos:
     def __init__(self, diretorio_base: str = "data"):
-
         self.diretorio_base = Path(diretorio_base)
-        self.tipos_permitidos = {'.pdf'}
+        self.tipos_permitidos = {'.pdf', '.epub', '.txt'}
     
-    def listar_pdfs(self, subdiretorio: str = None) -> List[Dict[str, str]]:
-
-        # Constrói o caminho completo
-        if subdiretorio:
-            diretorio = self.diretorio_base / subdiretorio
-        else:
-            diretorio = self.diretorio_base
+    def listar_documentos(self) -> List[Dict[str, str]]:
+        """
+        Lista todos os documentos digitais no diretório base.
+        """
+        documentos = []
         
         # Verifica se o diretório existe
-        if not diretorio.exists():
+        if not self.diretorio_base.exists():
             return []
         
-        # Lista os PDFs
-        pdfs = []
-        for arquivo in diretorio.glob('**/*.pdf'):
-            if arquivo.is_file():  # Garante que é um arquivo, não um diretório
-                pdfs.append({
-                    'nome': arquivo.name,
-                    'caminho': str(arquivo)
-                })
+        # Lista todos os documentos permitidos
+        for tipo in self.tipos_permitidos:
+            for arquivo in self.diretorio_base.glob(f'**/*{tipo}'):
+                if arquivo.is_file():
+                    documentos.append({
+                        'nome': arquivo.name,
+                        'caminho': str(arquivo),
+                        'tipo': tipo
+                    })
         
-        return pdfs
+        return documentos
 
 # Exemplo de uso:
 if __name__ == "__main__":
-    # Cria uma instância do gerenciador
     gerenciador = GerenciadorArquivos()
+    documentos = gerenciador.listar_documentos()
     
-    # Lista todos os PDFs na pasta de artigos
-    pdfs = gerenciador.listar_pdfs('artigos/pdf')
-    
-    # Mostra os resultados
-    print("\nPDFs encontrados:")
-    for pdf in pdfs:
-        print(f"Nome: {pdf['nome']}")
-        print(f"Caminho: {pdf['caminho']}")
+    print("\nDocumentos encontrados:")
+    for doc in documentos:
+        print(f"Nome: {doc['nome']}")
+        print(f"Tipo: {doc['tipo']}")
+        print(f"Caminho: {doc['caminho']}")
         print("-" * 50)
