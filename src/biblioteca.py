@@ -16,29 +16,54 @@ class GerenciadorArquivos:
         }
     
     def listar_documentos(self) -> List[Dict[str, str]]:
-        """
-        Lista todos os documentos digitais no diretório base.
-        """
+        """Lista todos os documentos digitais na biblioteca."""
         documentos = []
+        documentos_vistos = set()  # Para evitar duplicatas
         
-        # Verifica se o diretório existe
-        if not self.diretorio_base.exists():
-            return []
-        
-        # Lista todos os documentos permitidos
-        for tipo in self.tipos_permitidos:
-            for arquivo in self.diretorio_base.glob(f'**/*{tipo}'):
-                if arquivo.is_file():
-                    # Obtém o ano da última modificação do arquivo
-                    ano_publicacao = datetime.fromtimestamp(arquivo.stat().st_mtime).year
+        # Percorre todas as pastas de documentos
+        for pasta in self.diretorios_tipo.values():
+            pasta_path = self.diretorio_base / pasta
+            for arquivo in pasta_path.glob('**/*'):
+                if arquivo.is_file() and arquivo.suffix.lower() in self.tipos_permitidos:
+                    # Evita duplicatas usando o caminho relativo como chave
+                    caminho_relativo = str(arquivo.relative_to(self.diretorio_base))
+                    if caminho_relativo in documentos_vistos:
+                        continue
+                    documentos_vistos.add(caminho_relativo)
+                    
+                    # Obtém informações do arquivo
+                    stats = arquivo.stat()
+                    tamanho = stats.st_size
+                    data_criacao = datetime.fromtimestamp(stats.st_ctime)
+                    data_modificacao = datetime.fromtimestamp(stats.st_mtime)
+                    
+                    # Determina a categoria baseada na estrutura de pastas
+                    categoria = arquivo.parent.name
+                    if categoria in ['pdf', 'txt', 'epub']:
+                        categoria = arquivo.parent.parent.name
+                    
+                    # Formata o tamanho do arquivo
+                    if tamanho < 1024:
+                        tamanho_formatado = f"{tamanho} bytes"
+                    elif tamanho < 1024 * 1024:
+                        tamanho_formatado = f"{tamanho/1024:.1f} KB"
+                    else:
+                        tamanho_formatado = f"{tamanho/(1024*1024):.1f} MB"
                     
                     documentos.append({
                         'nome': arquivo.name,
-                        'caminho': str(arquivo),
-                        'tipo': tipo,
-                        'ano': ano_publicacao
+                        'tipo': arquivo.suffix.lower(),
+                        'ano': data_modificacao.year,
+                        'caminho': caminho_relativo,
+                        'tamanho': tamanho_formatado,
+                        'data_criacao': data_criacao.strftime('%d/%m/%Y %H:%M'),
+                        'ultima_modificacao': data_modificacao.strftime('%d/%m/%Y %H:%M'),
+                        'categoria': categoria.capitalize(),
+                        'status': 'Acessível' if arquivo.exists() else 'Não encontrado'
                     })
         
+        # Ordena os documentos por categoria e nome
+        documentos.sort(key=lambda x: (x['categoria'], x['nome']))
         return documentos
 
     def adicionar_documento(self, caminho_arquivo: str) -> bool:
@@ -116,18 +141,29 @@ def exibir_menu():
     print("5. Sair")
     print("=" * 50)
 
-def exibir_documentos(documentos: List[Dict[str, str]]):
+def exibir_documentos(documentos: List[Dict[str, str]]) -> None:
     """Exibe a lista de documentos formatada."""
     if not documentos:
-        print("\nNenhum documento encontrado!")
+        print("\nNenhum documento encontrado.")
         return
     
     print("\nDocumentos encontrados:")
-    print("-" * 50)
+    categoria_atual = None
+    
     for i, doc in enumerate(documentos, 1):
-        print(f"{i}. Nome: {doc['nome']}")
+        # Adiciona um separador quando muda a categoria
+        if categoria_atual != doc['categoria']:
+            categoria_atual = doc['categoria']
+            print("\n" + "=" * 50)
+            print(f"Categoria: {categoria_atual}")
+            print("=" * 50)
+        
+        print(f"\n{i}. Nome: {doc['nome']}")
         print(f"   Tipo: {doc['tipo']}")
-        print(f"   Ano: {doc['ano']}")
+        print(f"   Tamanho: {doc['tamanho']}")
+        print(f"   Criado em: {doc['data_criacao']}")
+        print(f"   Última modificação: {doc['ultima_modificacao']}")
+        print(f"   Status: {doc['status']}")
         print(f"   Caminho: {doc['caminho']}")
         print("-" * 50)
 
@@ -158,50 +194,10 @@ def main():
             input("\nPressione Enter para continuar...")
         
         elif opcao == "3":
-            print("\nRenomear documento")
-            print("=" * 50)
-            documentos = gerenciador.listar_documentos()
-            exibir_documentos(documentos)
-            
-            if documentos:
-                try:
-                    num_doc = int(input("\nDigite o número do documento a ser renomeado: ").strip())
-                    if 1 <= num_doc <= len(documentos):
-                        doc = documentos[num_doc - 1]
-                        novo_nome = input("Digite o novo nome (sem extensão): ").strip()
-                        if novo_nome:
-                            gerenciador.renomear_documento(doc['caminho'], novo_nome)
-                        else:
-                            print("\nNenhum nome fornecido!")
-                    else:
-                        print("\nNúmero de documento inválido!")
-                except ValueError:
-                    print("\nPor favor, digite um número válido!")
-            
-            input("\nPressione Enter para continuar...")
+            menu_renomear(gerenciador)
         
         elif opcao == "4":
-            print("\nRemover documento")
-            print("=" * 50)
-            documentos = gerenciador.listar_documentos()
-            exibir_documentos(documentos)
-            
-            if documentos:
-                try:
-                    num_doc = int(input("\nDigite o número do documento a ser removido: ").strip())
-                    if 1 <= num_doc <= len(documentos):
-                        doc = documentos[num_doc - 1]
-                        confirmacao = input(f"\nTem certeza que deseja remover '{doc['nome']}'? (s/n): ").strip().lower()
-                        if confirmacao == 's':
-                            gerenciador.remover_documento(doc['caminho'])
-                        else:
-                            print("\nOperação cancelada!")
-                    else:
-                        print("\nNúmero de documento inválido!")
-                except ValueError:
-                    print("\nPor favor, digite um número válido!")
-            
-            input("\nPressione Enter para continuar...")
+            menu_remover(gerenciador)
         
         elif opcao == "5":
             print("\nObrigado por usar o Sistema de Gerenciamento de Biblioteca Digital!")
@@ -210,6 +206,56 @@ def main():
         else:
             print("\nOpção inválida! Por favor, escolha 1, 2, 3, 4 ou 5.")
             input("Pressione Enter para continuar...")
+
+def menu_renomear(biblioteca: GerenciadorArquivos) -> None:
+    """Interface para renomear documentos."""
+    print("\nRenomear documento")
+    print("=" * 50)
+    
+    documentos = biblioteca.listar_documentos()
+    exibir_documentos(documentos)
+    
+    try:
+        num_doc = int(input("\nDigite o número do documento a ser renomeado: "))
+        if num_doc < 1 or num_doc > len(documentos):
+            print("\nNúmero de documento inválido!")
+            return
+        
+        novo_nome = input("Digite o novo nome (sem extensão): ").strip()
+        if not novo_nome:
+            print("\nNome inválido!")
+            return
+        
+        documento = documentos[num_doc - 1]
+        biblioteca.renomear_documento(documento['caminho'], novo_nome)
+        
+    except ValueError:
+        print("\nEntrada inválida! Digite um número.")
+
+def menu_remover(biblioteca: GerenciadorArquivos) -> None:
+    """Interface para remover documentos."""
+    print("\nRemover documento")
+    print("=" * 50)
+    
+    documentos = biblioteca.listar_documentos()
+    exibir_documentos(documentos)
+    
+    try:
+        num_doc = int(input("\nDigite o número do documento a ser removido: "))
+        if num_doc < 1 or num_doc > len(documentos):
+            print("\nNúmero de documento inválido!")
+            return
+        
+        documento = documentos[num_doc - 1]
+        confirmacao = input(f"\nTem certeza que deseja remover '{documento['nome']}'? (s/n): ").lower()
+        
+        if confirmacao == 's':
+            biblioteca.remover_documento(documento['caminho'])
+        else:
+            print("\nOperação cancelada!")
+            
+    except ValueError:
+        print("\nEntrada inválida! Digite um número.")
 
 if __name__ == "__main__":
     main()
