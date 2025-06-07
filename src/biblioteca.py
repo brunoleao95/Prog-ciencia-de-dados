@@ -72,12 +72,33 @@ class GerenciadorArquivos:
             print(f"\nErro ao adicionar documento: {str(e)}")
             return False
 
+    def renomear_documento(self, caminho_antigo: str, novo_nome: str) -> bool:
+        """
+        Renomeia um documento existente.
+        """
+        try:
+            arquivo_antigo = Path(caminho_antigo)
+            extensao = arquivo_antigo.suffix
+            
+            # Cria o novo caminho mantendo a mesma extensão
+            novo_arquivo = arquivo_antigo.parent / f"{novo_nome}{extensao}"
+            
+            # Renomeia o arquivo
+            arquivo_antigo.rename(novo_arquivo)
+            print(f"\nDocumento renomeado com sucesso para: {novo_arquivo.name}")
+            return True
+            
+        except Exception as e:
+            print(f"\nErro ao renomear documento: {str(e)}")
+            return False
+
 def exibir_menu():
     """Exibe o menu principal do sistema."""
     print("\n=== Sistema de Gerenciamento de Biblioteca Digital ===")
     print("1. Listar todos os documentos")
     print("2. Adicionar novo documento")
-    print("3. Sair")
+    print("3. Renomear documento")
+    print("4. Sair")
     print("=" * 50)
 
 def exibir_documentos(documentos: List[Dict[str, str]]):
@@ -88,11 +109,11 @@ def exibir_documentos(documentos: List[Dict[str, str]]):
     
     print("\nDocumentos encontrados:")
     print("-" * 50)
-    for doc in documentos:
-        print(f"Nome: {doc['nome']}")
-        print(f"Tipo: {doc['tipo']}")
-        print(f"Ano: {doc['ano']}")
-        print(f"Caminho: {doc['caminho']}")
+    for i, doc in enumerate(documentos, 1):
+        print(f"{i}. Nome: {doc['nome']}")
+        print(f"   Tipo: {doc['tipo']}")
+        print(f"   Ano: {doc['ano']}")
+        print(f"   Caminho: {doc['caminho']}")
         print("-" * 50)
 
 def main():
@@ -101,7 +122,7 @@ def main():
     
     while True:
         exibir_menu()
-        opcao = input("\nEscolha uma opção (1-3): ").strip()
+        opcao = input("\nEscolha uma opção (1-4): ").strip()
         
         if opcao == "1":
             documentos = gerenciador.listar_documentos()
@@ -122,11 +143,34 @@ def main():
             input("\nPressione Enter para continuar...")
         
         elif opcao == "3":
+            print("\nRenomear documento")
+            print("=" * 50)
+            documentos = gerenciador.listar_documentos()
+            exibir_documentos(documentos)
+            
+            if documentos:
+                try:
+                    num_doc = int(input("\nDigite o número do documento a ser renomeado: ").strip())
+                    if 1 <= num_doc <= len(documentos):
+                        doc = documentos[num_doc - 1]
+                        novo_nome = input("Digite o novo nome (sem extensão): ").strip()
+                        if novo_nome:
+                            gerenciador.renomear_documento(doc['caminho'], novo_nome)
+                        else:
+                            print("\nNenhum nome fornecido!")
+                    else:
+                        print("\nNúmero de documento inválido!")
+                except ValueError:
+                    print("\nPor favor, digite um número válido!")
+            
+            input("\nPressione Enter para continuar...")
+        
+        elif opcao == "4":
             print("\nObrigado por usar o Sistema de Gerenciamento de Biblioteca Digital!")
             break
         
         else:
-            print("\nOpção inválida! Por favor, escolha 1, 2 ou 3.")
+            print("\nOpção inválida! Por favor, escolha 1, 2, 3 ou 4.")
             input("Pressione Enter para continuar...")
 
 if __name__ == "__main__":
